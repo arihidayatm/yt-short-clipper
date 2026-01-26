@@ -6,6 +6,11 @@ numpy>=1.24.0
 Pillow>=10.0.0
 mediapipe>=0.10.0
 requests>=2.31.0
+yt-dlp>=2023.0.0
+
+# Google Cloud APIs (for Speech-to-Text and Text-to-Speech)
+google-cloud-speech>=2.21.0
+google-cloud-texttospeech>=2.14.0
 
 # YouTube Upload
 google-api-python-client>=2.100.0

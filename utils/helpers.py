@@ -4,6 +4,8 @@ Helper utility functions for YT Short Clipper
 
 import sys
 import re
+import os
+import shutil
 from pathlib import Path
 
 
@@ -22,20 +24,60 @@ def get_bundle_dir():
 
 
 def get_ffmpeg_path():
-    """Get FFmpeg executable path"""
+    """Get FFmpeg executable path, handling virtual environments"""
     if getattr(sys, 'frozen', False):
+        # For bundled executables
         bundled = get_app_dir() / "ffmpeg" / "ffmpeg.exe"
         if bundled.exists():
             return str(bundled)
+    
+    # Try to find ffmpeg in PATH
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    
+    # Try with .exe on Windows
+    if sys.platform == "win32":
+        found = shutil.which("ffmpeg.exe")
+        if found:
+            return found
+    
+    # Fallback to default
     return "ffmpeg"
 
 
 def get_ytdlp_path():
-    """Get yt-dlp executable path"""
+    """Get yt-dlp executable path, handling virtual environments"""
     if getattr(sys, 'frozen', False):
+        # For bundled executables
         bundled = get_app_dir() / "yt-dlp.exe"
         if bundled.exists():
             return str(bundled)
+    
+    # Try to find yt-dlp in PATH
+    found = shutil.which("yt-dlp")
+    if found:
+        return found
+    
+    # Try with .exe on Windows
+    if sys.platform == "win32":
+        found = shutil.which("yt-dlp.exe")
+        if found:
+            return found
+    
+    # Try in the current Python's scripts directory (for virtual environments)
+    scripts_dir = os.path.dirname(sys.executable)
+    yt_dlp_path = os.path.join(scripts_dir, "yt-dlp")
+    if os.path.exists(yt_dlp_path):
+        return yt_dlp_path
+    
+    # Also try with .exe extension on Windows
+    if sys.platform == "win32":
+        yt_dlp_exe = os.path.join(scripts_dir, "yt-dlp.exe")
+        if os.path.exists(yt_dlp_exe):
+            return yt_dlp_exe
+    
+    # Fallback to default
     return "yt-dlp"
 
 

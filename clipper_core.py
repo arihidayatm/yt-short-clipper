@@ -12,14 +12,59 @@ import numpy as np
 import tempfile
 import sys
 import time
+import shutil
 from pathlib import Path
 from datetime import datetime
 from openai import OpenAI
+from utils.ai_providers import create_ai_client
 
 # Hide console window on Windows
 SUBPROCESS_FLAGS = 0
 if sys.platform == "win32":
     SUBPROCESS_FLAGS = subprocess.CREATE_NO_WINDOW
+
+
+def get_executable_path(cmd_name: str, default: str = None) -> str:
+    """
+    Find the full path to an executable, handling virtual environments.
+    
+    First tries to find the command in PATH using shutil.which(),
+    then falls back to the default name.
+    
+    Args:
+        cmd_name: Name of the executable (e.g., "yt-dlp", "ffmpeg")
+        default: Default name to use if executable is not found
+        
+    Returns:
+        Full path to the executable or the command name itself
+    """
+    # Try to find in PATH
+    found_path = shutil.which(cmd_name)
+    if found_path:
+        return found_path
+    
+    # Try with .exe extension on Windows
+    if sys.platform == "win32":
+        found_path = shutil.which(cmd_name + ".exe")
+        if found_path:
+            return found_path
+    
+    # For yt-dlp, try to get it from the current Python's scripts directory
+    # This handles virtual environment cases
+    if cmd_name == "yt-dlp":
+        scripts_dir = os.path.dirname(sys.executable)
+        yt_dlp_path = os.path.join(scripts_dir, "yt-dlp")
+        if os.path.exists(yt_dlp_path):
+            return yt_dlp_path
+        
+        # Also try with .exe extension on Windows
+        if sys.platform == "win32":
+            yt_dlp_exe = os.path.join(scripts_dir, "yt-dlp.exe")
+            if os.path.exists(yt_dlp_exe):
+                return yt_dlp_exe
+    
+    # Return default or the original command name
+    return default or cmd_name
 
 
 class AutoClipperCore:
@@ -52,26 +97,55 @@ class AutoClipperCore:
         if self.ai_providers:
             # Highlight Finder client
             hf_config = self.ai_providers.get("highlight_finder", {})
-            self.highlight_client = OpenAI(
+            provider_type = hf_config.get("provider", "openai")
+            self.highlight_client = create_ai_client(
+                provider_type=provider_type,
                 api_key=hf_config.get("api_key", ""),
+                model=hf_config.get("model", model),
                 base_url=hf_config.get("base_url", "https://api.openai.com/v1")
             )
             self.model = hf_config.get("model", model)
             
-            # Caption Maker client (Whisper)
+            # Caption Maker client (Whisper/STT)
             cm_config = self.ai_providers.get("caption_maker", {})
-            self.caption_client = OpenAI(
-                api_key=cm_config.get("api_key", ""),
-                base_url=cm_config.get("base_url", "https://api.openai.com/v1")
-            )
+            cm_provider = cm_config.get("provider", "openai").lower()
+            if cm_provider == "google-cloud":
+                # Google Cloud Speech-to-Text
+                credentials_path = cm_config.get("credentials_path", "google-cloud-credentials.json")
+                self.caption_client = create_ai_client(
+                    provider_type="google-cloud",
+                    service_type="speech-to-text",
+                    credentials_path=credentials_path
+                )
+            else:
+                # Default to OpenAI Whisper
+                self.caption_client = create_ai_client(
+                    provider_type="openai",
+                    api_key=cm_config.get("api_key", ""),
+                    model=cm_config.get("model", "whisper-1"),
+                    base_url=cm_config.get("base_url", "https://api.openai.com/v1")
+                )
             self.whisper_model = cm_config.get("model", "whisper-1")
             
             # Hook Maker client (TTS)
             hm_config = self.ai_providers.get("hook_maker", {})
-            self.tts_client = OpenAI(
-                api_key=hm_config.get("api_key", ""),
-                base_url=hm_config.get("base_url", "https://api.openai.com/v1")
-            )
+            hm_provider = hm_config.get("provider", "openai").lower()
+            if hm_provider == "google-cloud":
+                # Google Cloud Text-to-Speech
+                credentials_path = hm_config.get("credentials_path", "google-cloud-credentials.json")
+                self.tts_client = create_ai_client(
+                    provider_type="google-cloud",
+                    service_type="text-to-speech",
+                    credentials_path=credentials_path
+                )
+            else:
+                # Default to OpenAI TTS
+                self.tts_client = create_ai_client(
+                    provider_type="openai",
+                    api_key=hm_config.get("api_key", ""),
+                    model=hm_config.get("model", tts_model),
+                    base_url=hm_config.get("base_url", "https://api.openai.com/v1")
+                )
             self.tts_model = hm_config.get("model", tts_model)
         else:
             # Fallback to single client (backward compatibility)
@@ -85,8 +159,9 @@ class AutoClipperCore:
         # Keep original client for backward compatibility
         self.client = client
         
-        self.ffmpeg_path = ffmpeg_path
-        self.ytdlp_path = ytdlp_path
+        # Resolve executable paths to handle virtual environments
+        self.ffmpeg_path = get_executable_path("ffmpeg", ffmpeg_path)
+        self.ytdlp_path = get_executable_path("yt-dlp", ytdlp_path)
         self.output_dir = Path(output_dir)
         self.temperature = temperature
         self.system_prompt = system_prompt or self.get_default_prompt()
@@ -284,8 +359,12 @@ Return HANYA JSON array, tanpa text lain."""
         return str(video_path), str(srt_path) if srt_path else None, video_info
     
     @staticmethod
-    def get_available_subtitles(url: str, ytdlp_path: str = "yt-dlp") -> dict:
+    def get_available_subtitles(url: str, ytdlp_path: str = None) -> dict:
         """Get list of available subtitles for a YouTube video
+        
+        Args:
+            url: YouTube URL
+            ytdlp_path: Path to yt-dlp executable (defaults to auto-resolved path)
         
         Returns:
             dict with keys:
@@ -294,6 +373,10 @@ Return HANYA JSON array, tanpa text lain."""
                 - 'error': error message if failed
         """
         try:
+            # Use auto-resolved path if not provided
+            if ytdlp_path is None:
+                ytdlp_path = get_executable_path("yt-dlp")
+            
             # Use --dump-json to get structured data
             cmd = [ytdlp_path, "--dump-json", "--skip-download", url]
             
@@ -383,24 +466,46 @@ Return HANYA JSON array, tanpa text lain."""
         
         request_clips = num_clips + 3
         
+        # Sanitize content to prevent encoding issues
+        def sanitize_text(text):
+            """Remove control characters and problematic characters"""
+            if not isinstance(text, str):
+                return str(text)
+            # Remove control characters (except tab, newline, carriage return)
+            import unicodedata
+            text = ''.join(ch if unicodedata.category(ch)[0] != 'C' or ch in '\t\n\r' else ' ' for ch in text)
+            # Ensure valid UTF-8
+            text = text.encode('utf-8', errors='replace').decode('utf-8', errors='replace')
+            return text
+        
         video_context = ""
         if video_info:
+            title = sanitize_text(video_info.get('title', 'Unknown'))
+            channel = sanitize_text(video_info.get('channel', 'Unknown'))
+            description = sanitize_text(video_info.get('description', '')[:500])
             video_context = f"""INFO VIDEO:
-- Judul: {video_info.get('title', 'Unknown')}
-- Channel: {video_info.get('channel', 'Unknown')}
-- Deskripsi: {video_info.get('description', '')[:500]}"""
+- Judul: {title}
+- Channel: {channel}
+- Deskripsi: {description}"""
+        
+        # Sanitize transcript
+        transcript_sanitized = sanitize_text(transcript)
         
         # Format the prompt with variables
         prompt = self.system_prompt.format(
             num_clips=request_clips,
             video_context=video_context,
-            transcript=transcript
+            transcript=transcript_sanitized
         )
+        
+        # Additional sanitization of final prompt
+        prompt = sanitize_text(prompt)
 
         response = self.highlight_client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
+            max_tokens=8000,  # Increased to 8000 for complete responses with multiple Indonesian highlights
         )
         
         # Report token usage (input and output separately)
@@ -412,19 +517,155 @@ Return HANYA JSON array, tanpa text lain."""
             result = re.sub(r"```json?\n?", "", result)
             result = re.sub(r"```\n?", "", result)
         
-        highlights = json.loads(result)
+        # Clean JSON before parsing - fix common issues
+        # Fix unescaped newlines within quoted strings
+        def clean_json_string(s):
+            """Clean JSON string by fixing common formatting issues"""
+            # This is a simple approach: find quoted strings and escape internal newlines
+            # We'll iterate through and fix newlines inside quotes
+            result = []
+            in_string = False
+            escape_next = False
+            
+            for i, char in enumerate(s):
+                if escape_next:
+                    result.append(char)
+                    escape_next = False
+                    continue
+                
+                if char == '\\':
+                    result.append(char)
+                    escape_next = True
+                    continue
+                
+                if char == '"':
+                    in_string = not in_string
+                    result.append(char)
+                    continue
+                
+                if in_string and char == '\n':
+                    # Replace newline in string with escaped newline
+                    result.append('\\n')
+                    continue
+                
+                result.append(char)
+            
+            return ''.join(result)
+        
+        result = clean_json_string(result)
+        
+        # Try to parse JSON with error handling
+        try:
+            highlights = json.loads(result)
+        except json.JSONDecodeError as e:
+            self.log(f"[DEBUG] JSON parsing failed: {str(e)}")
+            self.log(f"[DEBUG] Response length: {len(result)}")
+            self.log(f"[DEBUG] Response preview: {result[:200]}")
+            
+            # Try to recover incomplete/truncated JSON
+            recovered = False
+            
+            # Check if JSON appears truncated with trailing comma
+            if result.rstrip().endswith(','):
+                result_fixed = result.rstrip()[:-1]
+                # Close any open brackets
+                if result.count('[') > result.count(']'):
+                    result_fixed += ']'
+                if result.count('{') > result.count('}'):
+                    result_fixed += '}'
+                try:
+                    highlights = json.loads(result_fixed)
+                    self.log(f"[DEBUG] Recovered incomplete JSON (trailing comma)")
+                    recovered = True
+                except json.JSONDecodeError:
+                    pass
+            
+            # Try to complete unterminated string
+            if not recovered:
+                # Try multiple closure strategies based on what we find
+                if '\"reason\": \"' in result and not result.rstrip().endswith('\"'):
+                    # The reason field is likely unterminated
+                    closure_attempts = [
+                        '\"}\n  ]',  # Simple close
+                        '\"\n        }\n      ]\n    }\n  ]',  # More aggressive
+                        '\"\n      }\n    ]',  # Alternative
+                    ]
+                else:
+                    # Try to find any place we can close
+                    closure_attempts = [
+                        '\n  ]',  # Just close the array
+                        '}  \n]',  # Close object and array
+                        '}\n]',  # Simple close
+                    ]
+                
+                for closure in closure_attempts:
+                    result_fixed = result.rstrip() + closure
+                    try:
+                        test_highlights = json.loads(result_fixed)
+                        if isinstance(test_highlights, list) and len(test_highlights) > 0:
+                            highlights = test_highlights
+                            self.log(f"[DEBUG] Recovered incomplete JSON (using closure: {repr(closure[:20])})")
+                            recovered = True
+                            break
+                    except json.JSONDecodeError:
+                        pass
+            
+            # Last resort: extract any valid JSON objects found
+            if not recovered:
+                try:
+                    # Find all complete {...} patterns
+                    json_objects = []
+                    bracket_count = 0
+                    current_obj = ""
+                    for char in result:
+                        if char == '{':
+                            bracket_count += 1
+                        elif char == '}':
+                            bracket_count -= 1
+                        
+                        current_obj += char
+                        
+                        if bracket_count == 0 and current_obj.count('{') > 0:
+                            try:
+                                obj = json.loads(current_obj)
+                                json_objects.append(obj)
+                                current_obj = ""
+                            except json.JSONDecodeError:
+                                pass
+                    
+                    if json_objects:
+                        highlights = json_objects
+                        self.log(f"[DEBUG] Extracted {len(highlights)} JSON objects from response")
+                        recovered = True
+                except Exception:
+                    pass
+            
+            if not recovered:
+                highlights = []
         
         # Filter by duration
         valid = []
+        required_fields = ["start_time", "end_time", "title"]
+        
         for h in highlights:
-            duration = self.parse_timestamp(h["end_time"]) - self.parse_timestamp(h["start_time"])
-            h["duration_seconds"] = round(duration, 1)
-            if duration >= 58:
-                valid.append(h)
-                self.log(f"  ✓ {h['title']} ({duration:.0f}s)")
+            # Validate that highlight has all required fields
+            if not all(field in h for field in required_fields):
+                missing = [f for f in required_fields if f not in h]
+                self.log(f"[DEBUG] Skipping incomplete highlight (missing: {missing})")
+                continue
             
-            if len(valid) >= num_clips:
-                break
+            try:
+                duration = self.parse_timestamp(h["end_time"]) - self.parse_timestamp(h["start_time"])
+                h["duration_seconds"] = round(duration, 1)
+                if duration >= 58:
+                    valid.append(h)
+                    self.log(f"  ✓ {h['title']} ({duration:.0f}s)")
+                
+                if len(valid) >= num_clips:
+                    break
+            except (KeyError, ValueError) as e:
+                self.log(f"[DEBUG] Error processing highlight: {str(e)}")
+                continue
         
         return valid[:num_clips]
     
