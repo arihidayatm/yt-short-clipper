@@ -39,97 +39,146 @@ class APIStatusPage(ctk.CTkFrame):
         main = ctk.CTkFrame(self, fg_color="transparent")
         main.pack(fill="both", expand=True, padx=20, pady=(0, 10))
         
+        # Status summary card
+        summary_frame = ctk.CTkFrame(main, fg_color=("gray88", "gray18"), corner_radius=12)
+        summary_frame.pack(fill="x", pady=(0, 15))
+        
+        summary_content = ctk.CTkFrame(summary_frame, fg_color="transparent")
+        summary_content.pack(fill="x", padx=15, pady=12)
+        
+        summary_title = ctk.CTkLabel(summary_content, text="System Status Overview", 
+            font=ctk.CTkFont(size=14, weight="bold"), anchor="w")
+        summary_title.pack(fill="x", pady=(0, 8))
+        
+        # Status indicators row
+        indicators_frame = ctk.CTkFrame(summary_content, fg_color="transparent")
+        indicators_frame.pack(fill="x")
+        
+        self.summary_status_label = ctk.CTkLabel(indicators_frame, text="Scanning...", 
+            font=ctk.CTkFont(size=12), text_color="gray")
+        self.summary_status_label.pack(side="left", fill="x", expand=True)
+        
         # AI API Status (parent card)
-        ai_frame = ctk.CTkFrame(main, fg_color=("gray90", "gray17"))
-        ai_frame.pack(fill="x", pady=(15, 10))
+        ai_frame = ctk.CTkFrame(main, fg_color=("gray90", "gray17"), corner_radius=12)
+        ai_frame.pack(fill="x", pady=(0, 15))
         
         ai_header = ctk.CTkFrame(ai_frame, fg_color="transparent")
         ai_header.pack(fill="x", padx=15, pady=(15, 5))
         
-        ctk.CTkLabel(ai_header, text="AI API", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
+        ai_title_frame = ctk.CTkFrame(ai_header, fg_color="transparent")
+        ai_title_frame.pack(side="left")
         
-        # Sub-providers
+        ctk.CTkLabel(ai_title_frame, text="🤖", font=ctk.CTkFont(size=18)).pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(ai_title_frame, text="AI API Services", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
+        
+        # Sub-providers with better spacing
         providers_frame = ctk.CTkFrame(ai_frame, fg_color="transparent")
         providers_frame.pack(fill="x", padx=15, pady=(10, 15))
         
         # Highlight Finder
-        hf_frame = ctk.CTkFrame(providers_frame, fg_color=("gray85", "gray20"), corner_radius=8)
-        hf_frame.pack(fill="x", pady=(0, 8))
-        
-        hf_header = ctk.CTkFrame(hf_frame, fg_color="transparent")
-        hf_header.pack(fill="x", padx=12, pady=(10, 5))
-        
-        ctk.CTkLabel(hf_header, text="🎯 Highlight Finder", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(side="left")
-        self.hf_status_label = ctk.CTkLabel(hf_header, text="Checking...", font=ctk.CTkFont(size=12), text_color="gray")
-        self.hf_status_label.pack(side="right")
-        
-        self.hf_info_label = ctk.CTkLabel(hf_frame, text="", font=ctk.CTkFont(size=11), text_color="gray", anchor="w")
-        self.hf_info_label.pack(fill="x", padx=12, pady=(0, 10))
+        self._create_provider_card(providers_frame, "🎯", "Highlight Finder", 
+            "Finds engaging segments using AI analysis", "hf")
         
         # Caption Maker
-        cm_frame = ctk.CTkFrame(providers_frame, fg_color=("gray85", "gray20"), corner_radius=8)
-        cm_frame.pack(fill="x", pady=(0, 8))
-        
-        cm_header = ctk.CTkFrame(cm_frame, fg_color="transparent")
-        cm_header.pack(fill="x", padx=12, pady=(10, 5))
-        
-        ctk.CTkLabel(cm_header, text="📝 Caption Maker", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(side="left")
-        self.cm_status_label = ctk.CTkLabel(cm_header, text="Checking...", font=ctk.CTkFont(size=12), text_color="gray")
-        self.cm_status_label.pack(side="right")
-        
-        self.cm_info_label = ctk.CTkLabel(cm_frame, text="", font=ctk.CTkFont(size=11), text_color="gray", anchor="w")
-        self.cm_info_label.pack(fill="x", padx=12, pady=(0, 10))
+        self._create_provider_card(providers_frame, "📝", "Caption Maker", 
+            "Generates captions for video segments", "cm")
         
         # Hook Maker
-        hm_frame = ctk.CTkFrame(providers_frame, fg_color=("gray85", "gray20"), corner_radius=8)
-        hm_frame.pack(fill="x", pady=(0, 8))
-        
-        hm_header = ctk.CTkFrame(hm_frame, fg_color="transparent")
-        hm_header.pack(fill="x", padx=12, pady=(10, 5))
-        
-        ctk.CTkLabel(hm_header, text="🎤 Hook Maker", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(side="left")
-        self.hm_status_label = ctk.CTkLabel(hm_header, text="Checking...", font=ctk.CTkFont(size=12), text_color="gray")
-        self.hm_status_label.pack(side="right")
-        
-        self.hm_info_label = ctk.CTkLabel(hm_frame, text="", font=ctk.CTkFont(size=11), text_color="gray", anchor="w")
-        self.hm_info_label.pack(fill="x", padx=12, pady=(0, 10))
+        self._create_provider_card(providers_frame, "🎤", "Hook Maker", 
+            "Creates engaging audio hooks", "hm")
         
         # YouTube Title Maker
-        yt_maker_frame = ctk.CTkFrame(providers_frame, fg_color=("gray85", "gray20"), corner_radius=8)
-        yt_maker_frame.pack(fill="x", pady=(0, 0))
-        
-        yt_maker_header = ctk.CTkFrame(yt_maker_frame, fg_color="transparent")
-        yt_maker_header.pack(fill="x", padx=12, pady=(10, 5))
-        
-        ctk.CTkLabel(yt_maker_header, text="📺 YouTube Title Maker", font=ctk.CTkFont(size=13, weight="bold"), anchor="w").pack(side="left")
-        self.yt_maker_status_label = ctk.CTkLabel(yt_maker_header, text="Checking...", font=ctk.CTkFont(size=12), text_color="gray")
-        self.yt_maker_status_label.pack(side="right")
-        
-        self.yt_maker_info_label = ctk.CTkLabel(yt_maker_frame, text="", font=ctk.CTkFont(size=11), text_color="gray", anchor="w")
-        self.yt_maker_info_label.pack(fill="x", padx=12, pady=(0, 10))
+        self._create_provider_card(providers_frame, "📺", "YouTube Title Maker", 
+            "Generates optimized YouTube titles", "yt_maker")
         
         # YouTube API Status
-        yt_frame = ctk.CTkFrame(main, fg_color=("gray90", "gray17"))
-        yt_frame.pack(fill="x", pady=(0, 10))
+        yt_frame = ctk.CTkFrame(main, fg_color=("gray90", "gray17"), corner_radius=12)
+        yt_frame.pack(fill="x", pady=(0, 15))
         
         yt_header = ctk.CTkFrame(yt_frame, fg_color="transparent")
         yt_header.pack(fill="x", padx=15, pady=(15, 10))
         
-        ctk.CTkLabel(yt_header, text="YouTube API", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
+        yt_title_frame = ctk.CTkFrame(yt_header, fg_color="transparent")
+        yt_title_frame.pack(side="left")
         
-        self.yt_status_label = ctk.CTkLabel(yt_header, text="Checking...", font=ctk.CTkFont(size=13), text_color="gray")
-        self.yt_status_label.pack(side="right")
+        ctk.CTkLabel(yt_title_frame, text="📱", font=ctk.CTkFont(size=18)).pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(yt_title_frame, text="YouTube API", font=ctk.CTkFont(size=16, weight="bold")).pack(side="left")
         
-        self.yt_info_label = ctk.CTkLabel(yt_frame, text="", font=ctk.CTkFont(size=12), text_color="gray", anchor="w")
+        self.yt_status_badge = ctk.CTkLabel(yt_header, text="Checking...", 
+            font=ctk.CTkFont(size=11, weight="bold"), text_color="gray", 
+            bg_color=("gray80", "gray30"), fg_color=("gray80", "gray30"), 
+            corner_radius=6)
+        self.yt_status_badge.pack(side="right", padx=8, pady=0)
+        
+        self.yt_info_label = ctk.CTkLabel(yt_frame, text="", font=ctk.CTkFont(size=11), 
+            text_color="gray", anchor="w")
         self.yt_info_label.pack(fill="x", padx=15, pady=(0, 15))
         
-        # Refresh button
-        ctk.CTkButton(main, text="Refresh Status", image=self.refresh_icon, compound="left",
-            height=45, command=self.refresh_status).pack(fill="x", pady=(10, 0))
+        # Action buttons frame
+        actions_frame = ctk.CTkFrame(main, fg_color="transparent")
+        actions_frame.pack(fill="x", pady=(15, 0))
+        
+        # Refresh button with better styling
+        ctk.CTkButton(actions_frame, text="🔄 Refresh All Status", image=self.refresh_icon, 
+            compound="left", height=45, font=ctk.CTkFont(size=13, weight="bold"),
+            fg_color=("#3B8ED0", "#1F6AA5"), hover_color=("#36719F", "#144870"),
+            corner_radius=10,
+            command=self.refresh_status).pack(fill="x", pady=(0, 5))
+        
+        # Help text
+        help_text = ctk.CTkLabel(actions_frame, 
+            text="💡 Tip: If you see errors, check your API keys in Settings. All services must be configured for the application to work properly.",
+            font=ctk.CTkFont(size=10), text_color="gray", anchor="w", wraplength=500)
+        help_text.pack(fill="x", pady=(5, 0))
         
         # Footer
         footer = PageFooter(self, self)
-        footer.pack(fill="x", padx=20, pady=(0, 15), side="bottom")
+        footer.pack(fill="x", padx=20, pady=(15, 0), side="bottom")
+    
+    def _create_provider_card(self, parent, emoji, name, description, provider_key):
+        """Create a provider status card"""
+        card_frame = ctk.CTkFrame(parent, fg_color=("gray85", "gray20"), corner_radius=10)
+        card_frame.pack(fill="x", pady=(0, 10))
+        
+        # Header with emoji and title
+        header_frame = ctk.CTkFrame(card_frame, fg_color="transparent")
+        header_frame.pack(fill="x", padx=12, pady=(10, 0))
+        
+        title_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        title_frame.pack(side="left", expand=True)
+        
+        ctk.CTkLabel(title_frame, text=emoji, font=ctk.CTkFont(size=14)).pack(side="left", padx=(0, 8))
+        ctk.CTkLabel(title_frame, text=name, font=ctk.CTkFont(size=12, weight="bold"), anchor="w").pack(side="left")
+        
+        # Status badge
+        status_label = ctk.CTkLabel(header_frame, text="Checking...", 
+            font=ctk.CTkFont(size=10, weight="bold"), text_color="gray",
+            bg_color=("gray75", "gray35"), fg_color=("gray75", "gray35"),
+            corner_radius=5, padx=8, pady=2)
+        status_label.pack(side="right", padx=0, pady=0)
+        
+        # Description
+        ctk.CTkLabel(card_frame, text=description, font=ctk.CTkFont(size=10), 
+            text_color="gray", anchor="w").pack(fill="x", padx=12, pady=(5, 0))
+        
+        # Info label
+        info_label = ctk.CTkLabel(card_frame, text="", font=ctk.CTkFont(size=10), 
+            text_color="gray", anchor="w")
+        info_label.pack(fill="x", padx=12, pady=(3, 10))
+        
+        # Store references
+        if provider_key == "hf":
+            self.hf_status_label = status_label
+            self.hf_info_label = info_label
+        elif provider_key == "cm":
+            self.cm_status_label = status_label
+            self.cm_info_label = info_label
+        elif provider_key == "hm":
+            self.hm_status_label = status_label
+            self.hm_info_label = info_label
+        elif provider_key == "yt_maker":
+            self.yt_maker_status_label = status_label
+            self.yt_maker_info_label = info_label
     
     def update_status(self, youtube_connected, youtube_channel):
         """Update YouTube connection status (deprecated - now uses callback)"""
@@ -138,16 +187,17 @@ class APIStatusPage(ctk.CTkFrame):
     def refresh_status(self):
         """Refresh API status"""
         # Reset to checking state
-        self.hf_status_label.configure(text="Checking...", text_color="gray")
+        self.hf_status_label.configure(text="⏳ Checking...", text_color="gray", bg_color=("gray75", "gray35"))
         self.hf_info_label.configure(text="")
-        self.cm_status_label.configure(text="Checking...", text_color="gray")
+        self.cm_status_label.configure(text="⏳ Checking...", text_color="gray", bg_color=("gray75", "gray35"))
         self.cm_info_label.configure(text="")
-        self.hm_status_label.configure(text="Checking...", text_color="gray")
+        self.hm_status_label.configure(text="⏳ Checking...", text_color="gray", bg_color=("gray75", "gray35"))
         self.hm_info_label.configure(text="")
-        self.yt_maker_status_label.configure(text="Checking...", text_color="gray")
+        self.yt_maker_status_label.configure(text="⏳ Checking...", text_color="gray", bg_color=("gray75", "gray35"))
         self.yt_maker_info_label.configure(text="")
-        self.yt_status_label.configure(text="Checking...", text_color="gray")
+        self.yt_status_badge.configure(text="⏳ Checking...", text_color="gray", bg_color=("gray80", "gray30"))
         self.yt_info_label.configure(text="")
+        self.summary_status_label.configure(text="Checking all services...")
         
         def check_status():
             from openai import OpenAI
@@ -172,8 +222,8 @@ class APIStatusPage(ctk.CTkFrame):
                 
                 if not api_key:
                     self.after(0, lambda sl=status_label, il=info_label: (
-                        sl.configure(text="✗ Not configured", text_color="orange"),
-                        il.configure(text="Please configure API key in Settings")
+                        sl.configure(text="⚙️ Not configured", text_color="gray", bg_color=("gray75", "gray35")),
+                        il.configure(text="Configure API key in Settings")
                     ))
                     continue
                 
@@ -188,13 +238,13 @@ class APIStatusPage(ctk.CTkFrame):
                         # Check if configured model is available
                         if model in available_models:
                             self.after(0, lambda sl=status_label, il=info_label, m=model: (
-                                sl.configure(text="✓ Connected", text_color="green"),
+                                sl.configure(text="✓ Connected", text_color="white", bg_color=("green", "#2E7D32")),
                                 il.configure(text=f"Model: {m}")
                             ))
                         else:
                             self.after(0, lambda sl=status_label, il=info_label, m=model: (
-                                sl.configure(text="⚠ Model not found", text_color="orange"),
-                                il.configure(text=f"Model '{m}' not in available models")
+                                sl.configure(text="⚠️ Model not found", text_color="white", bg_color=("orange", "#F57C00")),
+                                il.configure(text=f"Model '{m}' not available")
                             ))
                     except Exception as list_error:
                         # Check if it's a connection/authentication error
@@ -205,14 +255,14 @@ class APIStatusPage(ctk.CTkFrame):
                         else:
                             # Provider might not support models.list(), show configured status
                             self.after(0, lambda sl=status_label, il=info_label, m=model: (
-                                sl.configure(text="✓ Configured", text_color="green"),
-                                il.configure(text=f"Model: {m} (provider doesn't support model listing)")
+                                sl.configure(text="✓ Configured", text_color="white", bg_color=("green", "#2E7D32")),
+                                il.configure(text=f"Model: {m}")
                             ))
                     
                 except Exception as e:
                     error_msg = str(e)[:60]
                     self.after(0, lambda sl=status_label, il=info_label, err=error_msg: (
-                        sl.configure(text="✗ Error", text_color="red"),
+                        sl.configure(text="✗ Error", text_color="white", bg_color=("red", "#C62828")),
                         il.configure(text=f"Error: {err}")
                     ))
             
@@ -220,20 +270,20 @@ class APIStatusPage(ctk.CTkFrame):
             youtube_connected, youtube_channel = self.get_youtube_status()
             
             if youtube_connected and youtube_channel:
-                self.after(0, lambda: self.yt_status_label.configure(text="✓ Connected", text_color="green"))
+                self.after(0, lambda: self.yt_status_badge.configure(text="✓ Connected", text_color="white", bg_color=("green", "#2E7D32")))
                 self.after(0, lambda: self.yt_info_label.configure(text=f"Channel: {youtube_channel['title']}"))
             else:
                 try:
                     from youtube_uploader import YouTubeUploader
                     uploader = YouTubeUploader()
                     if not uploader.is_configured():
-                        self.after(0, lambda: self.yt_status_label.configure(text="✗ Not configured", text_color="orange"))
+                        self.after(0, lambda: self.yt_status_badge.configure(text="⚙️ Not configured", text_color="gray", bg_color=("gray80", "gray30")))
                         self.after(0, lambda: self.yt_info_label.configure(text="client_secret.json not found"))
                     else:
-                        self.after(0, lambda: self.yt_status_label.configure(text="✗ Not connected", text_color="orange"))
-                        self.after(0, lambda: self.yt_info_label.configure(text="Connect in Settings → YouTube tab"))
+                        self.after(0, lambda: self.yt_status_badge.configure(text="⚠️ Not connected", text_color="white", bg_color=("orange", "#F57C00")))
+                        self.after(0, lambda: self.yt_info_label.configure(text="Connect your channel in Settings"))
                 except Exception as e:
-                    self.after(0, lambda: self.yt_status_label.configure(text="✗ Error", text_color="red"))
+                    self.after(0, lambda: self.yt_status_badge.configure(text="✗ Error", text_color="white", bg_color=("red", "#C62828")))
                     self.after(0, lambda: self.yt_info_label.configure(text=f"Error: {str(e)[:60]}"))
         
         threading.Thread(target=check_status, daemon=True).start()
