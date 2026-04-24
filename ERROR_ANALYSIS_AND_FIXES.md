@@ -99,7 +99,7 @@ CustomTkinter's Canvas widget has limitations when used as parent for custom dia
 
 1. Test the application:
    ```bash
-   cd /home/mahdev/Automation/yt-short-clipper
+   cd /computer/Automation/yt-short-clipper
    python app.py
    ```
 

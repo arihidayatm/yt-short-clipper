@@ -33,7 +33,7 @@
   "ai_providers": {
     "highlight_finder": {
       "provider": "google",
-      "api_key": "AIzaSyBDoBdpOEHoaKm6JxZI_vXy_KbT9QNb54c",
+      "api_key": "YOUR_API_KEY",
       "model": "gemini-2.5-flash"
     },
     "caption_maker": {
@@ -67,7 +67,7 @@
 ### Cara Menjalankan
 
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 
 # Run dengan script
 ./run.sh
@@ -142,7 +142,7 @@ Solusi:
 ### Verifikasi
 
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 
 # Test Google Gemini
 ./venv/bin/python -c "

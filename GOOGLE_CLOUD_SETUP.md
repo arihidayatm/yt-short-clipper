@@ -43,7 +43,7 @@
 1. Rename the downloaded JSON file to `google-cloud-credentials.json`
 2. Place it in the app directory:
    ```
-   /home/mahdev/Automation/yt-short-clipper/google-cloud-credentials.json
+   /computer/Automation/yt-short-clipper/google-cloud-credentials.json
    ```
 
 ### Step 6: Update Config
@@ -51,7 +51,7 @@
 Run this to update configuration:
 
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 ./venv/bin/python << 'EOF'
 import json
 from config.config_manager import ConfigManager
@@ -125,7 +125,7 @@ The app will use:
 Test Google Cloud setup:
 
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 ./venv/bin/python << 'EOF'
 from utils.google_cloud_adapters import GoogleCloudSpeechToTextAdapter
 from pathlib import Path

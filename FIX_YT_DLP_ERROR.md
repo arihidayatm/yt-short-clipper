@@ -37,19 +37,19 @@ Ini terjadi karena:
 
 **Option 1: Menggunakan script run.sh (RECOMMENDED)**
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 ./run.sh
 ```
 
 **Option 2: Direct command**
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 ./venv/bin/python app.py
 ```
 
 **Option 3: Dengan virtual environment aktivasi**
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 source venv/bin/activate
 python app.py
 ```
@@ -57,7 +57,7 @@ python app.py
 ### Verifikasi Perbaikan
 
 ```bash
-cd /home/mahdev/Automation/yt-short-clipper
+cd /computer/Automation/yt-short-clipper
 ./venv/bin/python << 'EOF'
 from utils.helpers import get_ytdlp_path, get_ffmpeg_path
 print("yt-dlp:", get_ytdlp_path())
@@ -67,13 +67,13 @@ EOF
 
 Output yang diharapkan:
 ```
-yt-dlp: /home/mahdev/Automation/yt-short-clipper/venv/bin/yt-dlp
+yt-dlp: /computer/Automation/yt-short-clipper/venv/bin/yt-dlp
 ffmpeg: /usr/bin/ffmpeg
 ```
 
 ### Path yang Digunakan
 
-- **yt-dlp**: `/home/mahdev/Automation/yt-short-clipper/venv/bin/yt-dlp` ✅
+- **yt-dlp**: `/computer/Automation/yt-short-clipper/venv/bin/yt-dlp` ✅
 - **ffmpeg**: `/usr/bin/ffmpeg` ✅
 
 ### Jika Masih Ada Error
